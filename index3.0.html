@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Descubra seu gosto</title>
+<style>
+  :root{
+    --tg-blue-1:#2AABEE;
+    --tg-blue-2:#229ED9;
+    --tg-deep:#0e1621;
+    --tg-panel:#17212b;
+    --tg-panel-2:#1e2a35;
+    --ink:#eaf3fb;
+    --muted:#8ba3b8;
+    --line:rgba(255,255,255,0.08);
+    --lime:#c6f135;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    background:
+      radial-gradient(circle at 15% -10%, rgba(42,171,238,0.25), transparent 45%),
+      radial-gradient(circle at 100% 10%, rgba(34,158,217,0.18), transparent 40%),
+      var(--tg-deep);
+    color:var(--ink);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:64px 20px 100px;
+  }
+
+  .plane-trail{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    overflow:hidden;
+    z-index:0;
+  }
+  .plane-trail svg{
+    position:absolute;
+    opacity:0.06;
+  }
+
+  .wrap{
+    position:relative;
+    z-index:1;
+    width:100%;
+    max-width:1100px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+
+  .eyebrow{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:28px;
+  }
+  .eyebrow svg{width:16px;height:16px;fill:var(--tg-blue-1);}
+
+  .redirect-btn{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    gap:12px;
+    padding:18px 40px;
+    border-radius:999px;
+    border:none;
+    cursor:pointer;
+    font-size:18px;
+    font-weight:600;
+    color:#fff;
+    background:linear-gradient(135deg, var(--tg-blue-1), var(--tg-blue-2));
+    box-shadow:0 12px 30px -8px rgba(42,171,238,0.55), 0 0 0 1px rgba(255,255,255,0.06) inset;
+    transition:transform .2s ease, box-shadow .2s ease;
+    text-decoration:none;
+  }
+  .redirect-btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 18px 36px -8px rgba(42,171,238,0.7), 0 0 0 1px rgba(255,255,255,0.08) inset;
+  }
+  .redirect-btn:active{ transform:translateY(0); }
+  .redirect-btn svg{
+    width:20px;height:20px;
+    transition:transform .25s ease;
+  }
+  .redirect-btn:hover svg{ transform:translate(3px,-3px) rotate(8deg); }
+
+  .btn-note{
+    margin-top:14px;
+    font-size:13px;
+    color:var(--muted);
+  }
+
+  h1{
+    margin:56px 0 8px;
+    font-size:34px;
+    font-weight:700;
+    text-align:center;
+    letter-spacing:-0.01em;
+  }
+  .sub{
+    color:var(--muted);
+    font-size:15px;
+    margin-bottom:34px;
+    text-align:center;
+  }
+
+  /* Carousel */
+  .carousel-shell{
+    position:relative;
+    width:100%;
+  }
+  .carousel{
+    display:flex;
+    gap:20px;
+    overflow-x:auto;
+    scroll-snap-type:x mandatory;
+    padding:6px 6px 18px;
+    scrollbar-width:none;
+  }
+  .carousel::-webkit-scrollbar{ display:none; }
+
+  .card{
+    flex:0 0 270px;
+    scroll-snap-align:start;
+    background:linear-gradient(160deg, var(--tg-panel-2), var(--tg-panel));
+    border:1px solid var(--line);
+    border-radius:20px;
+    overflow:hidden;
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    transition:transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+    position:relative;
+  }
+  .card:hover{
+    transform:translateY(-6px);
+    border-color:rgba(42,171,238,0.5);
+    box-shadow:0 20px 40px -18px rgba(0,0,0,0.6);
+  }
+  .card.soon{ opacity:.6; cursor:default; }
+  .card.soon:hover{ transform:none; box-shadow:none; }
+
+  .card-art{
+    position:relative;
+    height:150px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    background:linear-gradient(150deg, rgba(42,171,238,0.22), rgba(34,158,217,0.05));
+    border-bottom:1px solid var(--line);
+    padding:18px 14px;
+    text-align:center;
+  }
+  .card-icon{
+    width:44px;height:44px;
+    border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg, var(--tg-blue-1), var(--tg-blue-2));
+    flex-shrink:0;
+  }
+  .card-icon svg{ width:22px;height:22px; fill:#fff; }
+  .card-tagline{
+    font-size:13px;
+    font-weight:700;
+    line-height:1.3;
+  }
+
+  /* Imagem real do pacote (substitui o ícone quando pkg.image existe) */
+  .card-art.has-image{
+    padding:0;
+    height:190px;
+    position:relative;
+    overflow:hidden;
+  }
+  .card-image{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  .card-art.has-image::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:linear-gradient(to top, rgba(14,22,33,0.92) 0%, rgba(14,22,33,0.35) 45%, transparent 75%);
+  }
+  .card-art.has-image .card-tagline{
+    position:relative;
+    z-index:2;
+  }
+  .card-art.has-image .discount-chip{ z-index:3; }
+
+  .modal-art.has-image{
+    padding:0;
+    height:220px;
+    position:relative;
+    overflow:hidden;
+  }
+  .modal-image{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  .modal-art.has-image::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:linear-gradient(to top, rgba(23,33,43,0.95) 0%, rgba(23,33,43,0.25) 50%, transparent 80%);
+  }
+  .modal-art.has-image .card-tagline{ position:relative; z-index:2; }
+  .discount-chip{
+    position:absolute;
+    top:12px; right:12px;
+    background:var(--lime);
+    color:#0e1621;
+    font-size:10.5px;
+    font-weight:800;
+    padding:3px 8px;
+    border-radius:6px;
+  }
+
+  .card-body{
+    padding:16px 18px 20px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    flex:1;
+  }
+  .card-title{ font-size:18px; font-weight:700; }
+  .card-duration{
+    font-size:12px;
+    color:var(--muted);
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .card-price{ font-size:19px; font-weight:800; margin-top:2px; }
+  .card-price .old{
+    font-size:12.5px;
+    color:var(--muted);
+    text-decoration:line-through;
+    font-weight:500;
+    margin-left:6px;
+  }
+
+  .card-go{
+    margin-top:auto;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    padding:11px;
+    border-radius:10px;
+    background:var(--lime);
+    color:#0e1621;
+    font-weight:800;
+    font-size:13.5px;
+    border:none;
+    cursor:pointer;
+    transition:background .2s ease, transform .15s ease;
+  }
+  .card-go:hover{ transform:translateY(-1px); }
+  .card.soon .card-go{
+    background:var(--tg-panel-2);
+    color:var(--muted);
+    cursor:default;
+  }
+  .card.soon .card-go:hover{ transform:none; }
+
+  .arrows{
+    display:flex;
+    justify-content:center;
+    gap:14px;
+    margin-top:6px;
+  }
+  .arrow-btn{
+    width:38px;height:38px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:var(--tg-panel);
+    color:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    transition:background .2s ease, border-color .2s ease;
+  }
+  .arrow-btn:hover{ background:var(--tg-panel-2); border-color:rgba(42,171,238,0.5); }
+  .arrow-btn svg{ width:16px;height:16px; fill:var(--ink); }
+
+  footer{
+    margin-top:60px;
+    font-size:12px;
+    color:var(--muted);
+    text-align:center;
+  }
+
+  /* MODAL */
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(4,6,10,0.78);
+    backdrop-filter:blur(4px);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+    padding:24px;
+  }
+  .overlay.open{ display:flex; }
+
+  .modal{
+    background:var(--tg-panel);
+    border:1px solid var(--line);
+    border-radius:22px;
+    max-width:480px;
+    width:100%;
+    max-height:88vh;
+    overflow-y:auto;
+    position:relative;
+  }
+  .modal-art{
+    height:170px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    background:linear-gradient(150deg, rgba(42,171,238,0.28), rgba(34,158,217,0.06));
+    border-bottom:1px solid var(--line);
+    text-align:center;
+    padding:20px;
+  }
+  .modal-close{
+    position:absolute; top:14px; right:14px;
+    width:34px; height:34px;
+    border-radius:50%;
+    background:rgba(0,0,0,0.35);
+    border:1px solid rgba(255,255,255,0.15);
+    color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    z-index:5;
+    font-size:18px;
+  }
+  .modal-content{ padding:26px 28px 30px; }
+  .modal-name{ font-size:24px; font-weight:800; margin-bottom:4px; }
+  .modal-price{ font-size:20px; font-weight:800; margin-bottom:2px; }
+  .modal-price .old{ font-size:13px; color:var(--muted); text-decoration:line-through; font-weight:500; margin-left:8px; }
+  .modal-price-note{ font-size:12.5px; color:var(--muted); margin-bottom:20px; }
+
+  .duration-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background:var(--tg-panel-2);
+    border:1px solid var(--line);
+    padding:8px 14px;
+    border-radius:999px;
+    font-size:13.5px;
+    margin-bottom:20px;
+  }
+
+  .modal-section{ margin-bottom:20px; }
+  .modal-section h4{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--muted);
+    margin:0 0 10px;
+  }
+  .modal-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:9px; }
+  .modal-list li{ display:flex; align-items:flex-start; gap:10px; font-size:14.5px; }
+  .modal-list li svg{ width:16px; height:16px; flex-shrink:0; margin-top:2px; }
+
+  .modal-buy{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    padding:14px;
+    border:none;
+    border-radius:10px;
+    background:var(--lime);
+    color:#0e1621;
+    font-weight:800;
+    font-size:15px;
+    cursor:pointer;
+  }
+  .modal-buy svg{ width:18px; height:18px; }
+
+  /* SOCIAL PROOF POPUPS */
+  .proof-wrap{
+    position:fixed;
+    left:18px; bottom:18px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    z-index:60;
+    max-width:280px;
+  }
+  .proof-toast{
+    background:var(--tg-panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px 14px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    box-shadow:0 10px 30px -10px rgba(0,0,0,0.6);
+    animation:slideIn .35s ease;
+  }
+  .proof-toast.leaving{
+    animation:fadeOut .45s ease forwards;
+  }
+  @keyframes slideIn{ from{ opacity:0; transform:translateX(-16px);} to{ opacity:1; transform:translateX(0);} }
+  @keyframes fadeOut{ to{ opacity:0; transform:translateX(-10px); } }
+
+  .proof-toast.summary{
+    border-color:rgba(198,241,53,0.45);
+    background:linear-gradient(160deg, rgba(198,241,53,0.08), var(--tg-panel));
+  }
+  .proof-avatar.summary-icon{
+    background:var(--lime);
+    font-size:16px;
+  }
+  .proof-text .count{ color:var(--lime); font-weight:800; }
+
+  .proof-avatar{
+    width:36px; height:36px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700;
+    font-size:14px;
+    color:#0e1621;
+    background:var(--tg-blue-1);
+    flex-shrink:0;
+  }
+  .proof-text{ font-size:13px; line-height:1.35; }
+  .proof-text b{ font-weight:700; }
+  .proof-time{ color:var(--muted); font-size:11.5px; margin-top:2px; }
+
+  @media (max-width:520px){
+    h1{ font-size:26px; }
+    .redirect-btn{ padding:16px 28px; font-size:16px; }
+    .card{ flex:0 0 230px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="plane-trail">
+  <svg viewBox="0 0 24 24" width="400" height="400" style="top:-60px;left:-80px;transform:rotate(18deg);"><path d="M21.5 2.5L2 10.9c-.6.25-.6 1.1.02 1.33l5.02 1.9 1.94 6.02c.2.6 1 .68 1.3.13l2.55-4.6 4.9 3.62c.5.36 1.2.06 1.3-.55L22.98 3.4c.1-.6-.5-1.1-1.48-.9z"/></svg>
+  <svg viewBox="0 0 24 24" width="260" height="260" style="bottom:-40px;right:-60px;transform:rotate(-10deg);"><path d="M21.5 2.5L2 10.9c-.6.25-.6 1.1.02 1.33l5.02 1.9 1.94 6.02c.2.6 1 .68 1.3.13l2.55-4.6 4.9 3.62c.5.36 1.2.06 1.3-.55L22.98 3.4c.1-.6-.5-1.1-1.48-.9z"/></svg>
+</div>
+
+<div class="wrap">
+
+  <div class="eyebrow">
+    <svg viewBox="0 0 24 24"><path d="M21.5 2.5L2 10.9c-.6.25-.6 1.1.02 1.33l5.02 1.9 1.94 6.02c.2.6 1 .68 1.3.13l2.55-4.6 4.9 3.62c.5.36 1.2.06 1.3-.55L22.98 3.4c.1-.6-.5-1.1-1.48-.9z"/></svg>
+    canal oficial no telegram
+  </div>
+
+  <a class="redirect-btn" href="https://t.me/vazadas_24h_bot" id="redirectBtn">
+    Entrar no Telegram
+    <svg viewBox="0 0 24 24"><path d="M21.5 2.5L2 10.9c-.6.25-.6 1.1.02 1.33l5.02 1.9 1.94 6.02c.2.6 1 .68 1.3.13l2.55-4.6 4.9 3.62c.5.36 1.2.06 1.3-.55L22.98 3.4c.1-.6-.5-1.1-1.48-.9z"/></svg>
+  </a>
+  <div class="btn-note">Você será redirecionado para o app do Telegram</div>
+
+  <h1>descubra seu gosto</h1>
+  <div class="sub">Toque em um plano para ver o que está incluso</div>
+
+  <div class="carousel-shell">
+    <div class="carousel" id="carousel"></div>
+
+    <div class="arrows">
+      <div class="arrow-btn" id="prevBtn"><svg viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8V4z"/></svg></div>
+      <div class="arrow-btn" id="nextBtn"><svg viewBox="0 0 24 24"><path d="M9 4l8 8-8 8V4z"/></svg></div>
+    </div>
+  </div>
+
+  <footer>Conteúdo destinado exclusivamente a maiores de 18 anos.</footer>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal"></div>
+</div>
+
+<div class="proof-wrap" id="proofWrap"></div>
+
+<script>
+const CHECKOUT_LINK = "https://t.me/vazadas_24h_bot";
+
+const iconStar = `<path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/>`;
+const iconHeart = `<path d="M12 21s-8-4.6-8-11a4.8 4.8 0 018-3.5A4.8 4.8 0 0120 10c0 6.4-8 11-8 11z"/>`;
+const iconBolt = `<path d="M13 2L3 14h7l-1 8 11-14h-7z"/>`;
+const iconSparkle = `<path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/>`;
+const iconShield = `<path d="M12 2l7 4v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/>`;
+const checkSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-blue-1)" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>`;
+const giftSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="var(--lime)" stroke-width="2"><path d="M20 12v9H4v-9M2 7h20v5H2V7zM12 22V7M12 7C10 4 6 3 6 6c0 2 3 1 6 1zM12 7c2-3 6-4 6-1 0-2-3-1-6-1z"/></svg>`;
+
+const packages = [
+  {
+    id:"classico",
+    icon:iconStar,
+    image:"img/classico.jpg", // troque pelo caminho da sua imagem, ou deixe "" para usar o ícone
+    title:"Clássico",
+    tagline:"💦 Plano Tesão 💦",
+    duration:"7 dias de acesso",
+    price:"R$ 9,90",
+    oldPrice:"R$ 14,90",
+    discount:"30% OFF",
+    contents:[
+      "+35 fotos exclusivas em alta resolução",
+      "5 vídeos temáticos em HD",
+      "Acesso ao grupo VIP por 7 dias"
+    ],
+    bonus:[
+      "1 vídeo Totalmente Personalizado de sua escolha com qualquer MODELO"
+    ]
+  },
+  {
+    id:"doce",
+    icon:iconHeart,
+    image:"img/doce.jpg",
+    title:"Doce",
+    tagline:"🔞 Plano Safadeza 🔞",
+    duration:"15 dias de acesso",
+    price:"R$ 14,90",
+    oldPrice:"R$ 21,90",
+    discount:"30% OFF",
+    contents:[
+      "+50 fotos exclusivas em alta resolução",
+      "8 vídeos temáticos em HD",
+      "Acesso ao grupo VIP por 15 dias"
+    ],
+    bonus:[
+      "Prévia do próximo lançamento",
+      "5 Grupos váriados com conteudo infinito"
+    ]
+  },
+  {
+    id:"intenso",
+    icon:iconBolt,
+    image:"img/intenso.jpg",
+    title:"Intenso",
+    tagline:"🍆 Plano Cafetão 🍆",
+    duration:"30 dias de acesso",
+    price:"R$ 19,90",
+    oldPrice:"R$ 28,90",
+    discount:"30% OFF",
+    contents:[
+      "+80 fotos exclusivas em alta resolução",
+      "12 vídeos temáticos em HD",
+      "Acesso ao grupo VIP por 30 dias"
+    ],
+    bonus:[
+      "Acesso a vídeo personalizado das modelos",
+      "50% de DESCONTO na próxima compra",
+      "Prioridade no atendimento"
+    ]
+  },
+  {
+    id:"especial",
+    icon:iconSparkle,
+    image:"",
+    title:"Especial",
+    tagline:"Em breve...",
+    comingSoon:true
+  },
+  {
+    id:"exclusivo",
+    icon:iconShield,
+    image:"",
+    title:"Exclusivo",
+    tagline:"Em breve...",
+    comingSoon:true
+  }
+];
+
+function artMarkup(pkg){
+  if(pkg.image){
+    return `
+      <div class="card-art has-image">
+        ${pkg.discount ? `<div class="discount-chip">${pkg.discount}</div>` : ''}
+        <img class="card-image" src="${pkg.image}" alt="${pkg.title}" onerror="this.closest('.card-art').classList.remove('has-image'); this.remove();">
+        <div class="card-tagline">${pkg.tagline}</div>
+      </div>
+    `;
+  }
+  return `
+    <div class="card-art">
+      ${pkg.discount ? `<div class="discount-chip">${pkg.discount}</div>` : ''}
+      <div class="card-icon"><svg viewBox="0 0 24 24">${pkg.icon}</svg></div>
+      <div class="card-tagline">${pkg.tagline}</div>
+    </div>
+  `;
+}
+
+function renderCarousel(){
+  const carousel = document.getElementById('carousel');
+  carousel.innerHTML = packages.map(pkg => `
+    <div class="card ${pkg.comingSoon ? 'soon':''}" data-id="${pkg.id}">
+      ${artMarkup(pkg)}
+      <div class="card-body">
+        <div class="card-title">${pkg.title}</div>
+        ${pkg.comingSoon ? `
+          <div class="card-duration">Novidade chegando em breve</div>
+        ` : `
+          <div class="card-duration">⏳ ${pkg.duration}</div>
+          <div class="card-price">${pkg.price} <span class="old">${pkg.oldPrice}</span></div>
+        `}
+        <button class="card-go" data-action="${pkg.comingSoon ? 'none' : 'buy'}" data-id="${pkg.id}">
+          ${pkg.comingSoon ? 'Em breve' : `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+            Comprar agora
+          `}
+        </button>
+      </div>
+    </div>
+  `).join('');
+
+  carousel.querySelectorAll('.card').forEach(card=>{
+    if(card.classList.contains('soon')) return;
+    card.addEventListener('click',(e)=>{
+      if(e.target.closest('.card-go')) return;
+      openModal(card.dataset.id);
+    });
+  });
+  carousel.querySelectorAll('[data-action="buy"]').forEach(btn=>{
+    btn.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      window.open(CHECKOUT_LINK,'_blank');
+    });
+  });
+}
+
+function openModal(id){
+  const pkg = packages.find(p=>p.id===id);
+  if(!pkg || pkg.comingSoon) return;
+  const modal = document.getElementById('modal');
+  const artInner = pkg.image
+    ? `<img class="modal-image" src="${pkg.image}" alt="${pkg.title}" onerror="this.closest('.modal-art').classList.remove('has-image'); this.remove();">`
+    : `<div class="card-icon"><svg viewBox="0 0 24 24">${pkg.icon}</svg></div>`;
+  modal.innerHTML = `
+    <div class="modal-art ${pkg.image ? 'has-image' : ''}">
+      <div class="modal-close" id="modalClose">&times;</div>
+      ${artInner}
+      <div class="card-tagline" style="font-size:15px;">${pkg.tagline}</div>
+    </div>
+    <div class="modal-content">
+      <div class="modal-name">${pkg.title}</div>
+      <div class="modal-price">${pkg.price} <span class="old">${pkg.oldPrice}</span></div>
+      <div class="modal-price-note">Pagamento único • ${pkg.discount} por tempo limitado</div>
+
+      <div class="duration-pill">⏳ ${pkg.duration}</div>
+
+      <div class="modal-section">
+        <h4>O que vem no plano</h4>
+        <ul class="modal-list">
+          ${pkg.contents.map(c=>`<li>${checkSVG}${c}</li>`).join('')}
+        </ul>
+      </div>
+
+      <div class="modal-section">
+        <h4>Bônus grátis nessa oferta</h4>
+        <ul class="modal-list">
+          ${pkg.bonus.map(b=>`<li>${giftSVG}${b}</li>`).join('')}
+        </ul>
+      </div>
+
+      <button class="modal-buy" id="modalBuy">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+        Comprar agora
+      </button>
+    </div>
+  `;
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  document.getElementById('modalBuy').addEventListener('click', ()=> window.open(CHECKOUT_LINK,'_blank'));
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal(){
+  document.getElementById('overlay').classList.remove('open');
+}
+document.getElementById('overlay').addEventListener('click',(e)=>{
+  if(e.target.id==='overlay') closeModal();
+});
+
+renderCarousel();
+
+const carousel = document.getElementById('carousel');
+document.getElementById('prevBtn').addEventListener('click', () => {
+  carousel.scrollBy({ left: -280, behavior: 'smooth' });
+});
+document.getElementById('nextBtn').addEventListener('click', () => {
+  carousel.scrollBy({ left: 280, behavior: 'smooth' });
+});
+
+/* ---- Social proof popups ---- */
+const names = ["Lucas","Rafael","Bruno","Gabriel","Matheus","André","Felipe","Diego","Thiago","Vinícius","Rodrigo","Gustavo"];
+const buyablePackages = packages.filter(p=>!p.comingSoon);
+
+// tempo que cada popup fica visível na tela (ms)
+const PURCHASE_VISIBLE_MS = 9000;
+const SUMMARY_VISIBLE_MS  = 10000;
+
+// intervalo entre uma compra individual e outra (ms) — variado
+const PURCHASE_MIN_GAP = 10000;
+const PURCHASE_MAX_GAP = 16000;
+
+// intervalo entre um popup de resumo e outro (ms) — mais espaçado
+const SUMMARY_MIN_GAP = 30000;
+const SUMMARY_MAX_GAP = 50000;
+
+function launchToast(html, extraClass, visibleMs){
+  const wrap = document.getElementById('proofWrap');
+  const toast = document.createElement('div');
+  toast.className = `proof-toast ${extraClass || ''}`.trim();
+  toast.innerHTML = html;
+  wrap.appendChild(toast);
+  setTimeout(()=>{
+    toast.classList.add('leaving');
+    setTimeout(()=> toast.remove(), 450);
+  }, visibleMs);
+}
+
+function randomGap(min, max){
+  return Math.random() * (max - min) + min;
+}
+
+function scheduleNext(fn, min, max){
+  setTimeout(fn, randomGap(min, max));
+}
+
+function showPurchaseProof(){
+  const pkg = buyablePackages[Math.floor(Math.random()*buyablePackages.length)];
+  const name = names[Math.floor(Math.random()*names.length)];
+  const mins = Math.floor(Math.random()*55)+2;
+  const initial = name[0];
+
+  launchToast(`
+    <div class="proof-avatar">${initial}</div>
+    <div>
+      <div class="proof-text"><b>${name}</b> comprou o plano <b>${pkg.title}</b></div>
+      <div class="proof-time">há ${mins} minutos</div>
+    </div>
+  `, '', PURCHASE_VISIBLE_MS);
+
+  scheduleNext(showPurchaseProof, PURCHASE_MIN_GAP, PURCHASE_MAX_GAP);
+}
+
+function showSummaryProof(){
+  const count = Math.floor(Math.random()*14)+12; // entre 12 e 25 compras
+
+  launchToast(`
+    <div class="proof-avatar summary-icon">🔥</div>
+    <div>
+      <div class="proof-text"><span class="count">${count} compras</span> efetuadas na última hora</div>
+      <div class="proof-time">atualizado agora</div>
+    </div>
+  `, 'summary', SUMMARY_VISIBLE_MS);
+
+  scheduleNext(showSummaryProof, SUMMARY_MIN_GAP, SUMMARY_MAX_GAP);
+}
+
+setTimeout(showPurchaseProof, 1500);
+setTimeout(showSummaryProof, 6000);
+</script>
+
+</body>
+</html>
